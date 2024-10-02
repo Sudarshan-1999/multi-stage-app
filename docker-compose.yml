@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: go.dockerfile
+    image: go-app:latest
+    container_name: go_app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    environment:         
+      - DB_HOST=db
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_PORT=${POSTGRES_PORT}
+    networks:
+      - app-network
+    ports:
+      - "8080:8080"  
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: npm.dockerfile
+    image: react-app:latest
+    container_name: react_container
+    ports:
+      - "80:80"
+
+volumes:
+  pg_data:
+
+networks:
+  app-network:
+    driver: bridge
